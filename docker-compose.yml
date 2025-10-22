@@ -1,0 +1,106 @@
+version: "3.8"
+
+services:
+  # -----------------------
+  # Neo4j (no auth for brief)
+  # -----------------------
+  neo4j:
+    image: neo4j:4.4
+    container_name: neo4j
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=none   # disable auth (as requested)
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - ./data/neo4j:/data
+      - ./data/gold:/import   # mount gold CSVs here for import convenience
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt
+
+  # -----------------------
+  # Airflow (standalone - dev)
+  # -----------------------
+  airflow:
+    image: apache/airflow:2.6.3
+    container_name: airflow
+    restart: unless-stopped
+    environment:
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      # For dev we will run airflow in standalone (no auth)
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./data:/opt/airflow/data
+    command: >
+      bash -c "airflow db upgrade || true &&
+               airflow users create --username none --firstname none --lastname none --role Admin --email none@none || true &&
+               airflow standalone"
+    ports:
+      - "8080:8080"
+
+  # -----------------------
+  # Marquez (lineage UI/API)
+  # -----------------------
+  marquez:
+    image: marquezproject/marquez:latest
+    container_name: marquez
+    restart: unless-stopped
+    environment:
+      - MARQUEZ_DB=sqlite
+    ports:
+      - "5000:5000"
+
+  # -----------------------
+  # Prometheus
+  # -----------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./grafana/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+
+  # -----------------------
+  # Grafana (anonymous access enabled for brief)
+  # -----------------------
+  grafana:
+    image: grafana/grafana:9.0
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Editor
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+
+  # -----------------------
+  # FastAPI app
+  # -----------------------
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: kg_api
+    restart: unless-stopped
+    volumes:
+      - ./api:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  # volumes can be declared here if you prefer named volumes
+  # example:
+  # neo4j_data:
+  #   driver: local
