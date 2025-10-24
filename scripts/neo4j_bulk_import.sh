@@ -1,38 +1,26 @@
-#Import Neo4j
 set -e
 
-SILVER_DIR="data/silver"
 GOLD_DIR="data/gold"
-TMP_DIR="tmp"
 
-mkdir -p "$GOLD_DIR" "$TMP_DIR"
+echo "[*] Conversion des Parquet Silver -> CSV (Gold)..."
+python3 scripts/export_parquet_to_csv.py
 
-echo "[*] Converting Parquet to CSV for Neo4j..."
+echo "[*] Arrêt de Neo4j pour import offline..."
+docker stop neo4j || true
 
-# Convert nodes
-echo "[+] Processing nodes..."
-python3 -c "
-import pandas as pd
-df = pd.read_parquet('$SILVER_DIR/nodes.parquet')
-df.rename(columns={'id': 'id:ID', 'name': 'name', 'label': 'label'}, inplace=True)
-df.to_csv('$GOLD_DIR/nodes.csv', index=False)
-"
+echo "[*] Import des données dans Neo4j (bulk)..."
+# On monte directement data/gold dans /import pour éviter les problèmes de permission
+docker run --rm \
+  -v $(pwd)/neo4j/data:/data \
+  -v $(pwd)/data/gold:/import \
+  neo4j:5.13 \
+  neo4j-admin database import full \
+    --overwrite-destination=true \
+    --nodes=/import/nodes.csv \
+    --relationships=/import/edges.csv \
+    neo4j
 
-# Convert edges from all shards
-echo "[+] Processing edges from shards..."
-> "$GOLD_DIR/edges.csv"  # Empty/create the file
-echo ':START_ID,:END_ID,type' > "$GOLD_DIR/edges.csv"
+echo "[*] Redémarrage de Neo4j..."
+docker start neo4j
 
-for shard in "$SILVER_DIR"/shard=*/; do
-    python3 -c "
-import pandas as pd
-df = pd.read_parquet('${shard}edges.parquet')
-df.rename(columns={'src': ':START_ID', 'dst': ':END_ID'}, inplace=True)
-df['type'] = 'REL'
-df[[':START_ID', ':END_ID', 'type']].to_csv('$TMP_DIR/shard_edges.csv', index=False, mode='w')
-"
-    tail -n +2 "$TMP_DIR/shard_edges.csv" >> "$GOLD_DIR/edges.csv"
-done
-
-echo "[✓] CSVs ready in $GOLD_DIR/"
-echo "Next step: Use 'neo4j-admin database import' with these files."
+echo "[✓] Import terminé avec succès !"

@@ -17,16 +17,8 @@ def partition_edges():
         shard_df.to_parquet(os.path.join(shard_dir, "edges.parquet"), index=False)
         print(f"[+] Shard {shard_id} généré. Contient {len(shard_df)} edges.")
 
-# def copy_nodes():
-#     bronze = os.path.join(BRONZE_DIR, "nodes.parquet")
-#     silver = os.path.join(SILVER_DIR, "nodes.parquet")
-#     df = pd.read_parquet(bronze)
-#     df.to_parquet(silver, index=False)
-#     print("[+] nodes.parquet Bronze copié dans Silver.")
-
 def main():
     partition_edges()
-    #copy_nodes()
 
 if __name__ == "__main__":
     main()

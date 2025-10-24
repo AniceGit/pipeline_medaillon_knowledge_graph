@@ -63,6 +63,7 @@ db.sqlite3-journal
 
 # Data
 data/
+neo4j/
 
 # Flask stuff:
 instance/

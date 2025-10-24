@@ -1,30 +1,4 @@
 #Validation Great Expectations
-# import os
-# import pandas as pd
-
-# BRONZE_DIR = "data/bronze"
-
-# def check_nodes():
-#     path = os.path.join(BRONZE_DIR, "nodes.parquet")
-#     df = pd.read_parquet(path)
-#     if not df["id"].is_unique:
-#         raise ValueError("IDs des nodes non unique.")
-#     print("Nodes: IDs uniques.")
-
-# def check_edges():
-#     path = os.path.join(BRONZE_DIR, "edges.parquet")
-#     df = pd.read_parquet(path)
-#     if df["src"].isnull().any() or df["dst"].isnull().any():
-#         raise ValueError("Nulls trouvés 'src' or 'dst'.")
-#     print("Edges: Aucun nulls 'src' or 'dst'.")
-
-# def main():
-#     check_nodes()
-#     check_edges()
-
-# if __name__ == "__main__":
-#     main()
-#----------------------------------------------------------------
 import os
 import pandas as pd
 BRONZE_DIR = "data/bronze"
