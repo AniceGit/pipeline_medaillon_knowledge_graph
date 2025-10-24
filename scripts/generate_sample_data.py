@@ -1,17 +1,16 @@
-#Génération de données
+#Génération de données simulées pour un graphe
 import csv
 import os
 import random
 
 # Paramètres de génération
 OUT_DIR = "data/raw"
-NUM_NODES = 1_000_000
-NUM_EDGES = 5_000_000
-NODE_CHUNK = 100_000
-EDGE_CHUNK = 200_000
-LABELS = ["Person", "Org", "Paper"]
+NUM_NODES = 1_000_000 #Nombre total de noeuds
+NUM_EDGES = 5_000_000 #Nombre total d'arêtes
+LABELS = ["Person", "Org", "Paper"] # Types de noeuds possibles
 
 def generate_nodes():
+    """Génère un fichier CSV contenant les noeuds du graphe."""
     os.makedirs(OUT_DIR, exist_ok=True)
     with open(os.path.join(OUT_DIR, "nodes.csv"), "w", newline='') as f:
         writer = csv.writer(f)
@@ -22,6 +21,7 @@ def generate_nodes():
     print("[+] nodes.csv written")
 
 def generate_edges():
+    """Génère un fichier CSV contenant les arêtes du graphe."""
     with open(os.path.join(OUT_DIR, "edges.csv"), "w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["src", "dst", "type"])
@@ -32,6 +32,7 @@ def generate_edges():
     print("[+] edges.csv written")
 
 def main():
+    """Exécute la génération des noeuds et des arêtes."""
     generate_nodes()
     generate_edges()
 
